@@ -13,6 +13,8 @@ Finally, the map is meant to be analyzed per year, so when loading it will updat
 Based on the feedbacks I received, I:
 - added a legend for better understanding of the chart. 
 - kept only three colors (green, orange, red) for a better perception of the levels of delays and cancellations.
+- changed the title to be self-explaining.
+- added tooltip so the users can access the pieces of information drawn.
 
 Feedback
 “Great map! I like the animation and found it well done. I however had hard time to figure out what kind of data was shown up. I think, a legend is mandatory here.”
@@ -20,6 +22,9 @@ Nicolas G.
 
 “I faced couple of delays myself, and now, I know I am not alone. From now on, I will try to avoid Chicago and Atlanta which show the worst statistics. I however think the yellow color doesn’t provide much information. 3 colors should be enough”
 Sebastien C.
+
+“I liked it very much (I would maybe choose another color as background for the map, but that’s details) I think the year by year animation is very powerful tool. It’s a good way of conveying the evolution/trend over the time. I however wish I could somehow access the data behind the map to get more details. What happened in year 2000 to have it all red (above 25%)? Crossing weather forecast / other reasons would be nice to have as a next step”
+Claude F.
 
 Resources:
 US state map TopoJSON data: https://gist.githubusercontent.com/stuartlynn/fb148318c332ac8360f5/raw/c0a59badd26d6736b5b65faf1241ee2ddb85c724/usstates.json

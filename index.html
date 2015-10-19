@@ -14,7 +14,7 @@
 
 	h2 {
 	text-align: left;
-	margin-left: 500px;
+	margin-left: 200px;
 	color: black;
 	}
 
@@ -33,11 +33,11 @@
     </style>
   <script type="text/javascript">
     var formatPercent = d3.format(".0%"),
-		formatNumber = d3.format(".0f");
+		formatNumber = d3.format(",0f");
 		
 	var colors = d3.scale.threshold()
 						 .domain([0.15,0.25])
-						 .range(['q0-4','q1-4','q2-4']);
+						 .range(["q0-4","q1-4","q2-4"]);
 						 
 	function add_legeng(tag){
 		var x = d3.scale.linear()
@@ -47,31 +47,32 @@
 		
 		var xAxis = d3.svg.axis()
 			.scale(x)
-			.orient("bottom")
+			.orient('bottom')
 			.tickSize(13)
 			.tickValues(colors.domain())
 			.tickFormat(function(d) { return d === .25 ? formatPercent(d) : formatNumber(100 * d); });
 			
-		
-		tag.selectAll("rect")
+		/* add the color scale legend */
+		tag.selectAll('rect')
 			.data(colors.range().map(function(color) {
 										var d = colors.invertExtent(color);
 										if (d[0] == null) d[0] = x.domain()[0];
 										if (d[1] == null) d[1] = x.domain()[1];
 										return d;}))
-									.enter().append("rect")
-									.attr("height", 8)
-									.attr("x", function(d) { return x(d[0]); })
-									.attr("width", function(d) { return x(d[1]) - x(d[0]); })
-									.attr("class", function(d) { return colors(d[0]); });
+									.enter().append('rect')
+									.attr('height', 8)
+									.attr('x', function(d) { return x(d[0]); })
+									.attr('width', function(d) { return x(d[1]) - x(d[0]); })
+									.attr('class', function(d) { return colors(d[0]); });
 									
-		tag.call(xAxis).append("text")
-						.attr("class", "caption")
-						.attr("y", -6)
+		tag.call(xAxis).append('text')
+						.attr('class', 'caption')
+						.attr('y', -6)
 						.text("Percentage of flights delayed or cancelled")
 						.style('font-family','sans-serif')
 						.style('font-size','14px');
-	
+		
+		/* add the circle diameter legend */
 		var radius = d3.scale.sqrt()
 				   .domain([0, 500000])
 				   .range([0, 30]);
@@ -97,28 +98,24 @@
 	}
 	
 	function draw(geo_data) {
-      
-      /*
-        D3.js setup code
-      */
-		
-		 "use strict";
+
         var margin = 75,
             width = 1200 - margin,
             height = 700 - margin;
 
-        d3.select("body")
-          .append("h2")
-          .text("Air Flights ");
+        d3.select('body')
+          .append('h2')
+          .text("Percentage of Delays and Cancellations recorded in the US landing airports");
 
-        var svg = d3.select("body")
-            .append("svg")
-            .attr("width", width + margin)
-            .attr("height", height + margin)
+        var svg = d3.select('body')
+            .append('svg')
+            .attr('width', width + margin)
+            .attr('height', height + margin)
 			.style('background','#6699CC')
             .append('g')
             .attr('class', 'map');
-
+		
+		/* draw the US map */
         var projection = d3.geo.albersUsa()
 							   .scale(1450)
                                .translate([width / 1.8, height / 1.8]);
@@ -133,10 +130,11 @@
                      .style('fill', 'white')
                      .style('stroke', 'black')
                      .style('stroke-width', 0.5);
-					 
+		
+		/* place the legend */		
 		svg = d3.select('svg').append('g')
-							  .attr("class", "legend")
-							  .attr("transform", "translate(" + width * 3 / 4 + "," + 30 + ")");
+							  .attr('class', 'legend')
+							  .attr('transform', "translate(" + width * 3 / 4 + "," + 30 + ")");
 		
 		add_legeng(svg);
 		
@@ -149,6 +147,7 @@
                 };
             };
 
+			/* aggregate the data per year and destination airports */
             var nested = d3.nest()
                            .key(function(d) { return d['Year']; })
 						   .key(function(d) { return d['Dest']; })
@@ -166,12 +165,12 @@
 					
 				svg = d3.select('svg')
 					.append('g')
-					.attr("class", "airport");
+					.attr('class', 'airport');
 				
 				var flightsNb_max = 500000;
 				
 				function update(year) {
-
+					/* fitler the dtaset to exclude the year, so it remains grouped by destination airports only */
 					var year_data = nested.filter(function(d) { return d['key'] == year;})[0].values
 										  .sort(function(a, b) { return b.values['flights'] - a.values['flights'];});
 					
@@ -179,16 +178,18 @@
 								   .domain([0, flightsNb_max])
 								   .range([0, 30]);
 					
+					/* fro each airport, bring its coordinated (long,lat) from airports dataset*/
 					year_data.forEach(function(d){
 						var result = airports.filter(function(airport){
 							return d.key === airport.code;
 						});
+						/* if coordinates returned by the mapper are null because outside of the US (e.g Guam or Puerto Rico airports), replace by null */
 						d.coords = (result[0] !== undefined) ? result[0].coords : null;
 						d.name = (result[0] !== undefined) ? result[0].name : null;
 					});					
 								  
-					d3.select("h2")
-					  .text("Air traffic " + year);
+					d3.select('h2')
+					  .text("Percentage of Delays and Cancellations recorded in the US landing airports: " + year);
 
 					var circles = svg.selectAll('circle')
 									.data(year_data.filter(function(d){return d.coords != null;}),function(d){ return d.key;});
@@ -199,13 +200,16 @@
 						
 					circles.attr('cx', function(d){ return d.coords[0]; })
 						.attr('cy', function(d){ return d.coords[1]; })
+						/* adjust diameter depending on the nmber of flights */
 						.attr('r', function(d) {
 							return radius(d.values['flights']);
 						 })
+						 /*set up the color from the percentage of delays and cancellations */
 						.attr('class', function(d) {
 							return colors(d.values['delays']);})
-						.append('title')
-						.text(function(d) { return d.name; })
+											/* add tooltip */
+						.append('title')	
+						.text(function(d) { return d.name+"\n Number of flights: "+formatNumber(d.values['flights'])+"\n% delays and cancellations: "+formatPercent(d.values['delays']); })
 						.attr('fill', 'black')
 						.transition()
 						.duration(500);
@@ -215,24 +219,28 @@
 				var year_end = d3.max(nested, function(d) { return +d['key']; });
 				
 				var years = [];
-
+				
+				/* load the different years conatined in the dataset */
 				for(var i = year_start; i <= year_end; i += 1) {
 					years.push(i);
 				};
 
 				var year_idx = 0;
 				
+				/* iterate through years */
 				var year_interval = setInterval(function() {
 					update(years[year_idx]);
 
 					year_idx++;
 
 					if(year_idx >= years.length) {
+						/* grant control of the years' selection to user */
 						clearInterval(year_interval);
 							
 						var buttons = d3.select('body').append('div')
 													.attr('id', 'slider')
-													
+						
+						/* slider is defined/programmed as an external library (see resources) */							
 						buttons.call(d3.slider()
 										.axis(true)
 										.min(year_start)
@@ -242,7 +250,7 @@
 						
 						var yearSaved = year_end;
 						
-						//moving the button
+						/* when moving the slider's button */
 						buttons.select('a').on('mouseup', function() {
 							var currentYear = Math.round(this.name);
 							if (currentYear!= +yearSaved){
@@ -250,7 +258,8 @@
 								yearSaved = currentYear;
 							}
 						});
-						//clicking on the scale
+						
+						/* when clicking on the scale */
 						buttons.select('a').on('mouseenter', function() {
 							var currentYear = Math.round(this.name);
 							if (currentYear!= +yearSaved){
@@ -262,17 +271,17 @@
 				}, 1000);
 				
 			}
-			
+			/* load airports information */
 			d3.csv("data/airports.csv",plot_airport);
 		};
-		
+		/* load the flight data froim the RITA*/
 		d3.csv("data/RITA.csv",load_data);
 	};
    </script>
 </head>
 <body>
   <script type="text/javascript">
-
+  /* load the US (border + states) TopoJson data */
   d3.json("data/US_states.json", draw);
   
   </script>
