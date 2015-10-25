@@ -2,7 +2,7 @@
 Are the flights always on time, and the ones delayed or cancelled statically insignificant?  
 As a casual traveler I have already experienced a couple of flight delays and even cancellation (am I just unlucky then?).  
 Do the ageing infrastructures and the growing number of connection contribute to increase the delays and cancellations, or the aircrafts innovation and improved reliability lower them?  
-Surprisingly, the percentage of delays and cancellations hardly gets under 10%. By 2001-2002 the situation had improved, but <u>from that point on</u>, it then constantly deteriorated until 2008.
+By 2001-2002 the situation had improved, but <u>from that point on</u>, it then constantly deteriorated until 2008.
 
 
 ##Design
