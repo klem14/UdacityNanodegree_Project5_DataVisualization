@@ -105,7 +105,7 @@
 
         d3.select('body')
           .append('h2')
-          .text("Percentage of Delays and Cancellations recorded in the US landing airports");
+          .text("Are US airports facing more Delays and Cancellations over time?");
 
         var svg = d3.select('body')
             .append('svg')
@@ -189,7 +189,7 @@
 					});					
 								  
 					d3.select('h2')
-					  .text("Percentage of Delays and Cancellations recorded in the US landing airports: " + year);
+					  .text("Are US airports facing more Delays and Cancellations over time: " + year);
 
 					var circles = svg.selectAll('circle')
 									.data(year_data.filter(function(d){return d.coords != null;}),function(d){ return d.key;});
