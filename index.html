@@ -25,11 +25,26 @@
 
 	div#slider { width: 1195px; left:5px; }
 	
-	path.domain{ display: none; }
-	.tick text { font-family: sans-serif;
+	.legend path.domain{ display: none; }
+	.legend tick text { font-family: sans-serif;
 				font-size: 12px; }
-			
+	#svg-chart {
+		position: relative;
+		top: 30px;
+		left:180px;
+	}	
 
+	.chart .line { stroke-width: 3px;
+		stroke: rgb(91,155,213); }
+	
+	.chart .axis path.domain{
+		fill: transparent;
+		stroke: black; }
+	
+	.chart .axis line{
+		fill: black;
+		stroke: black; }
+	
     </style>
   <script type="text/javascript">
     var formatPercent = d3.format(".0%"),
@@ -76,25 +91,60 @@
 		var radius = d3.scale.sqrt()
 				   .domain([0, 500000])
 				   .range([0, 30]);
-	
-		tag.selectAll('circle')
-				.data([400000,220000,100000,25000])
-				.enter()
-				.append('circle')
-				.attr('cx',25)
-				.attr('cy',55) 
-				.attr('r', function(d){ return radius(d);})
-				.style('fill','white')
-				.style('stroke','black')
-
+				
 		tag.append('text')
-			.attr('x',60)
-			.attr('y',60)
+			.attr('x',0)
+			.attr('y',40)
 			.style('font-size','14px')
 			.style('font-family','sans-serif')
-			.text('Nb of flights landing on');
-
-
+			.text('Nb of flights landing on:');
+		
+		var bubbles = tag.selectAll('circle')
+				.data([400000,220000,100000,25000])
+				.enter();
+		bubbles.append('circle')
+				.attr('cx',25)
+				.attr('cy',function(d){return 35 + Math.sqrt(d)/8;}) 
+				.attr('r', function(d){ return radius(d);})
+				.style('fill','white')
+				.style('stroke','black');
+		bubbles.append('text')
+				.attr('x',55)
+				.attr('y',function(d){return 40 + Math.sqrt(d)/8;})
+				.text(function(d){return formatNumber(d);})
+				.style('fill','black');
+	}
+	
+	function plotChart(svg, height, margin,x,y){
+		var xAxis = d3.svg.axis().scale(x)
+						  .orient("bottom")
+						  .ticks(1);
+		var yAxis = d3.svg.axis().scale(y)
+						  .orient("left")
+						  .ticks(5)
+						  .tickFormat(formatPercent);
+			 
+		svg.append("g")
+			  .attr("class", "x axis")
+			  .attr("transform", "translate(0," + (height - margin) + ")")
+			  .style('font-size','12px')
+			  .call(xAxis);
+			 
+		svg.append("g")
+			 .attr("transform", "translate(" + margin + ",0)")
+			 .attr("class", "y axis")
+			 .style('font-size','12px')
+			 .call(yAxis);
+			 
+		svg.append('text')
+			.attr('class','title')
+			.attr('x',110)
+			.attr('y',30)
+			.style('font-size','17px')
+			.style('font-family','sans-serif')
+			.text('Evolution of the percentage of delays and cancellations over time');
+		
+		return yAxis; //return to be adjusted according the data update
 	}
 	
 	function draw(geo_data) {
@@ -109,6 +159,7 @@
 
         var svg = d3.select('body')
             .append('svg')
+			.attr('id','svg-map')
             .attr('width', width + margin)
             .attr('height', height + margin)
 			.style('background','#6699CC')
@@ -131,10 +182,21 @@
                      .style('stroke', 'black')
                      .style('stroke-width', 0.5);
 		
+		/* Save space and format for year label */
+		d3.select('svg').append('text')
+						.attr('class', 'year')
+						.attr('x',-30 + width/2)
+						.attr('y',40)
+						.style('font-size','22px')
+						.style('font-weight','600')
+						.style('text-decoration','underline')
+						.style('font-family','sans-serif')
+						.style('fill','white');
+						
 		/* place the legend */		
 		svg = d3.select('svg').append('g')
 							  .attr('class', 'legend')
-							  .attr('transform', "translate(" + width * 3 / 4 + "," + 30 + ")");
+							  .attr('transform', "translate(" + width * (4 / 5) + "," + 25 + ")");
 		
 		add_legeng(svg);
 		
@@ -153,7 +215,7 @@
 						   .key(function(d) { return d['Dest']; })
                            .rollup(agg_year)
                            .entries(data);
-			
+						   
 			function plot_airport(points) {
 				var airports = points.map(function(d) {
 						return {
@@ -188,15 +250,18 @@
 						d.name = (result[0] !== undefined) ? result[0].name : null;
 					});					
 								  
-					d3.select('h2')
-					  .text("Are US airports facing more Delays and Cancellations over time: " + year);
-
+					//d3.select('h2')
+					//  .text("Are US airports facing more Delays and Cancellations over time: " + year);
+					d3.select('.year').text("Year: " + year);
+					
 					var circles = svg.selectAll('circle')
 									.data(year_data.filter(function(d){return d.coords != null;}),function(d){ return d.key;});
 				
+					circles.select('title').text(function(d) { return d.name+"\nNumber of flights: "+formatNumber(d.values['flights'])+"\n% delays and cancellations: "+formatPercent(d.values['delays']); });
 					circles.exit().remove();
 					circles.enter()
 						.append('circle')
+						.attr('id',function(d){ return d.key;});
 						
 					circles.attr('cx', function(d){ return d.coords[0]; })
 						.attr('cy', function(d){ return d.coords[1]; })
@@ -206,13 +271,14 @@
 						 })
 						 /*set up the color from the percentage of delays and cancellations */
 						.attr('class', function(d) {
-							return colors(d.values['delays']);})
-											/* add tooltip */
-						.append('title')	
-						.text(function(d) { return d.name+"\n Number of flights: "+formatNumber(d.values['flights'])+"\n% delays and cancellations: "+formatPercent(d.values['delays']); })
+							return colors(d.values['delays']);});
+					/* add tooltip */
+					circles.append('title')	
+						.text(function(d) { return d.name+"\nNumber of flights: "+formatNumber(d.values['flights'])+"\n% delays and cancellations: "+formatPercent(d.values['delays']); })
 						.attr('fill', 'black')
 						.transition()
 						.duration(500);
+					
 				}
 				
 				var year_start = d3.min(nested, function(d) { return +d['key']; });
@@ -234,6 +300,7 @@
 					year_idx++;
 
 					if(year_idx >= years.length) {
+
 						/* grant control of the years' selection to user */
 						clearInterval(year_interval);
 							
@@ -248,6 +315,78 @@
 										.step(1)
 										.value(year_end));
 						
+						function yearlyData(data, iata){
+							var filtered = data;
+
+							if (iata != undefined){
+								filtered = data.filter(function(d){return d['Dest'] == iata;});
+							}
+
+							return d3.nest()
+									.key(function(d) { return d['Year']; })
+									.rollup(agg_year)
+									.entries(filtered);
+						}
+						
+						/* aggregate the data per year only */
+						var trend_nested = yearlyData(data);
+						
+						var h = height * (1/3),
+							w = width * (2/3)
+							m = 40;
+						var delays_max = d3.max(trend_nested, function(d) {
+							return d.values['delays'];
+						});
+						
+						/* function to map data for the line chart*/
+						var y = d3.scale.linear().domain([0.1, Math.ceil(delays_max*10)/10+0.001]).range([h - m, m]);
+						var x = d3.scale.ordinal().domain(years).rangeRoundPoints([m, w - m]);
+						
+						/* Add another svg container for the line chart*/
+						var trend = d3.select('body')
+									.append('svg')
+									.attr('id','svg-chart')
+									.attr('width', w + m)
+									.attr('height', h + m)
+									.style('background','white')
+									.append('g')
+									.attr('class', 'chart');
+						/* Defined the drawing function */				  
+						var line = d3.svg.line()
+									.x(function(d) { return x(d.year); })
+									.y(function(d) { return y(d.delay); });
+						
+						/*Draw the overall trend (all airports) as initialization*/
+						trend.selectAll('path')
+								.data([trend_nested.map(function(d) { return {year:+d.key,delay:d.values['delays']};})])
+								.enter()
+								.append('path')
+								.attr('class','line')
+								.attr('d', line)
+								.attr('stroke','black')
+								.attr('fill','none');
+						
+						/* Add other elements (e.g. axies) onto the chart*/						
+						var yAxis = plotChart(trend,h,m,x,y);
+						
+						function addPoint(data,year){
+							/* Add red circle onto the line at current year */
+							var point = trend.selectAll('circle')
+								 .data(data.filter(function(d){ return d.key == year;}),function(d){ return d.key;})
+								 .attr('cy',function(d){ return y(d.values['delays'])});
+							point.exit().remove();
+							point.enter()
+								 .append('circle')
+								 .attr('cx',function(d){ return x(d.key)})
+								 .attr('cy',function(d){ return y(d.values['delays'])})
+								 .attr('r',5)
+								 .style('stroke','red')
+								 .style('fill','red');
+						}
+						
+						/* Highligh the current year (from slider selection) onto the chart line */
+						addPoint(trend_nested,year_end);
+				
 						var yearSaved = year_end;
 						
 						/* when moving the slider's button */
@@ -255,6 +394,7 @@
 							var currentYear = Math.round(this.name);
 							if (currentYear!= +yearSaved){
 								update(+currentYear);
+								addPoint(trend_nested,+currentYear);
 								yearSaved = currentYear;
 							}
 						});
@@ -264,9 +404,42 @@
 							var currentYear = Math.round(this.name);
 							if (currentYear!= +yearSaved){
 								update(+currentYear);
+								addPoint(trend_nested,+currentYear);
 								yearSaved = currentYear;
 							}
 						});
+						
+						function addLine(svg,data,line,iata){
+							svg.select('path')
+								.attr('d', line(data.map(function(d) { return {year:+d.key,delay:d.values['delays']};})));
+						}
+						
+						/* Reset default trend line (all airports) whenever moving mouse out of an airport circle */
+						d3.select('.map').on('mouseover',function(){
+							trend.select('.title').text("Evolution of the percentage of delays and cancellations over time")
+							
+							y.domain([0.1,Math.ceil(delays_max*10)/10+0.001]);
+							addLine(trend,yearlyData(data),line);
+							addPoint(trend_nested,yearSaved);
+						});
+						
+						/* When passing over airport circle, adjust the char line to show only the selected airport trend */
+						d3.select('.airport').selectAll('circle').on('mouseover',function(){
+							trend.select('.title').text("Evolution of the percentage of delays and cancellations over time (at " +this.id + " airport)")
+							var iata_data = yearlyData(data,this.id)
+							
+							y.domain([Math.floor(d3.min(iata_data, function(d) {
+															return d.values['delays'];})
+										 *10)/10-0.001
+									 ,Math.ceil(d3.max(iata_data, function(d) {
+															return d.values['delays'];})
+										 *10)/10+0.001
+									]);
+							trend.select(".y.axis").call(yAxis)
+							addLine(trend,iata_data,line,this.id);
+							addPoint(iata_data,yearSaved);
+						});
+	
 					}
 				}, 1000);
 				
